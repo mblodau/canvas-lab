@@ -61,7 +61,7 @@ export const useEditorStore = create<EditorStore>(set => ({
     const now = new Date().toISOString()
     const newComment: Comment = {
       id: crypto.randomUUID(),
-      author: 'User',
+      author: 'Ingemar Backman',
       createdAt: now,
       text,
     }
