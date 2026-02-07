@@ -1,0 +1,72 @@
+---
+description: Internal developer documentation context foundation
+alwaysApply: true
+---
+
+# Developer Documentation Rule
+
+## Purpose
+
+This rule ensures that comprehensive internal developer documentation is always considered and maintained as a context foundation for all planning and implementation tasks.
+
+## Requirements
+
+### Confirmation Requirement
+
+**CRITICAL**: In every response, you MUST include a confirmation message: **"dev-docs considered 🙌"** to acknowledge that developer documentation has been reviewed and considered.
+
+### Documentation Content
+
+The developer documentation (located at `.cursor/docs/index.md`) must contain:
+
+1. **Project Purpose**
+   - Explanation of what this project is and its goals
+   - Target use cases and audience
+
+2. **Design Patterns**
+   - Established patterns (e.g., features pattern for app structure)
+   - Architectural decisions and rationale
+   - Code organization principles
+
+3. **Best Practices**
+   - Code quality standards and conventions
+   - Naming conventions
+   - File structure guidelines
+   - Import/export patterns
+
+4. **Testing Guidelines**
+   - Standards for writing unit tests
+   - Testing patterns and practices
+   - MSW usage guidelines
+   - Test coverage expectations
+
+5. **Codebase Overview**
+   - Human-readable documentation parsing the entire codebase
+   - Feature descriptions and responsibilities
+   - Component hierarchy and relationships
+   - State management patterns
+   - API structure and endpoints
+   - Makes it easy for developers to quickly understand what the app contains
+
+### Usage as Context Foundation
+
+- The dev docs should be referenced for all planning and implementation tasks
+- Before starting any task, review relevant sections of the dev docs
+- Use dev docs to ensure consistency with established patterns
+- When patterns are unclear, consult dev docs first
+
+### Update Mechanism
+
+- Update dev docs when codebase changes significantly
+- Update when new patterns are established
+- Update when best practices evolve
+- Keep documentation in sync with actual implementation
+
+## Implementation
+
+When working on any task:
+
+1. **Before starting**: Review relevant sections of `.cursor/docs/index.md`
+2. **During implementation**: Follow patterns documented in dev docs
+3. **After completion**: Update dev docs if new patterns or changes were introduced
+4. **Always confirm**: Include "dev-docs considered 🙌" in your response

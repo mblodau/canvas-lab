@@ -1,0 +1,95 @@
+---
+description: Retrospective process for evaluating developer documentation usage
+alwaysApply: true
+---
+
+# Retrospective Rule
+
+## Purpose
+
+This rule defines a retrospective process to evaluate how developer documentation was used during a task and improve it for future use.
+
+## Trigger
+
+When the user writes **"do a retro"**, perform a comprehensive retrospective on the current chat thread in relation to the developer documentation.
+
+## Retrospective Process
+
+### Three Key Questions
+
+For each question, provide a detailed answer:
+
+1. **Was the developer documentation considered?**
+   - Check if dev docs were referenced and used during the task
+   - Identify which sections were consulted
+   - Note if dev docs were ignored or overlooked
+
+2. **Was the developer documentation correct and did it help in your task?**
+   - Evaluate accuracy of the documentation
+   - Assess usefulness and clarity
+   - Identify any gaps or misleading information
+   - Note what worked well
+
+3. **Does the developer documentation need to be updated with new changes from the accomplished task?**
+   - Identify gaps or outdated information
+   - Note new patterns or practices that emerged
+   - Identify areas where documentation should be expanded
+   - Note any inconsistencies between docs and implementation
+
+### Improvement Process
+
+For each question where the answer is **"no"** or **"partially"**:
+
+1. **Reason about why**: Analyze why the documentation didn't work as expected
+   - Was it missing information?
+   - Was it unclear or confusing?
+   - Was it outdated?
+   - Was it in the wrong location?
+
+2. **Improve the documentation**: Make concrete improvements so it works better next time
+   - Add missing information
+   - Clarify confusing sections
+   - Update outdated content
+   - Reorganize if needed
+   - Add examples if helpful
+
+### Action Items
+
+After the retrospective:
+
+1. **Update Developer Documentation**
+   - Update `.cursor/docs/index.md` with:
+     - Improvements and corrections
+     - New information discovered during the retrospective
+     - New patterns or practices
+     - Clarifications and examples
+
+2. **Update Changelog**
+   - Fill in `.cursor/docs/CHANGELOG.md` with entries tracking:
+     - **What changed**: Description of the documentation change
+     - **Why**: Reason for the change (based on retrospective findings)
+     - **When**: Timestamp/date of the change
+
+### Changelog Format
+
+Use a simple, readable format:
+
+```markdown
+## [Date] - [Brief Description]
+
+### Changed
+
+- What changed: [Description]
+- Why: [Reason based on retrospective]
+- When: [Timestamp]
+```
+
+## Example Retrospective Output
+
+When triggered, provide:
+
+1. Summary of the task completed
+2. Answers to the three key questions
+3. Analysis of issues found
+4. Specific improvements made to documentation
+5. Changelog entry created
