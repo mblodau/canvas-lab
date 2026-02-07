@@ -126,7 +126,6 @@ The project uses path aliases for cleaner imports:
 ### Feature Development
 
 - Each feature is self-contained with its own components, hooks, state, types, and tests
-- Pragmatic cross-feature dependencies are acceptable when features are tightly coupled (e.g., canvas importing comment store). The dependent feature knows about the dependency, but the dependency has no knowledge of the dependent feature.
 - Shared code goes in `src/shared/`
 
 ### State Management

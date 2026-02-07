@@ -62,8 +62,7 @@ src/
 ### Key Principles
 
 1. **Feature Isolation**: Each feature contains all its code (components, hooks, store, types, tests)
-2. **Pragmatic Cross-Feature Dependencies**: While features should ideally be isolated, pragmatic one-way dependencies are acceptable when features are tightly coupled (e.g., canvas importing comment store). The dependent feature (canvas) knows about the dependency (comments), but the dependency (comments) has no knowledge of the dependent feature.
-3. **Shared Layer**: Contains only reusable code with no feature-specific knowledge
+2. **Shared Layer**: Contains only reusable code with no feature-specific knowledge
 
 ### Feature Structure
 
@@ -304,9 +303,7 @@ The main canvas feature for Miro-like functionality:
 - **Utils**: `cameraUtils.ts` - Pure functions (`viewportToWorld`, `worldToViewport`, `clamp`) and constants (`GRID_SIZE`, `MIN_ZOOM`, `MAX_ZOOM`, `DRAG_THRESHOLD`, `ZOOM_SENSITIVITY`)
 - **Types**: `Camera` - Canvas type definitions
 - **Tests**: `cameraUtils.test.ts` (33 pure function tests), `useCanvasInteraction.test.ts` (hook behavior tests with mocked editor store), `Canvas.test.tsx` (component tests including integration) - tests updated to reflect comment system integration
-- **Cross-Feature Dependency**: Canvas imports `useEditorStore` from `@/features/comments/store` for thread creation and camera focus coordination
-
-**Canvas File Structure**:
+  **Canvas File Structure**:
 
 ```
 features/canvas/
