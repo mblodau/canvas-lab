@@ -41,7 +41,7 @@ The canvas uses a **two-layer DOM structure** for infinite canvas feel:
 - **Trackpad two-finger scroll** → pan camera (wheel event without `ctrlKey`)
 - **Trackpad pinch-to-zoom** → smooth zoom at cursor (wheel event with `ctrlKey`, browser standard across all desktop OSes)
 - **Space + drag** or **middle mouse drag** → pan mode via Pointer Events (`onPointerDown`, `onPointerMove`, `onPointerUp`) with `setPointerCapture`
-- **Left click** (no drag) → place crosshair at world coordinates
+- **Left click** (no drag) → create comment thread at world coordinates
 - Use global `window` listeners for keyboard handling (space bar for pan mode)
 - Implement drag threshold (~3px via `DRAG_THRESHOLD` constant) to separate clicks from pan gestures
 - Zoom-at-cursor: capture world point under cursor, apply smooth exponential zoom (`Math.exp(-deltaY * ZOOM_SENSITIVITY)`), adjust camera to keep point fixed
@@ -63,7 +63,7 @@ src/
 ### Key Principles
 
 1. **Feature Isolation**: Each feature contains all its code (components, hooks, store, API, types, tests)
-2. **No Cross-Feature Imports**: Features should not import from other features directly
+2. **Pragmatic Cross-Feature Dependencies**: While features should ideally be isolated, pragmatic one-way dependencies are acceptable when features are tightly coupled (e.g., canvas importing comment store). The dependent feature (canvas) knows about the dependency (comments), but the dependency (comments) has no knowledge of the dependent feature.
 3. **Shared Layer**: Contains only reusable code with no feature-specific knowledge
 4. **App Layer**: Contains app-level concerns (routing, providers, layout)
 
@@ -90,6 +90,32 @@ features/[feature-name]/
 - **Co-location**: Keep related code together (components with their tests)
 - **Canvas utilities**: Pure functions (coordinate conversion, clamp) extracted to `utils/cameraUtils.ts` for reuse and testability
 - **Interaction hooks**: Complex interaction logic extracted into custom hooks (e.g., `useCanvasInteraction`) to keep components slim and focused on rendering
+- **DRY (Don't Repeat Yourself)**: Extract duplicated logic to shared utilities. If the same function appears in multiple files, move it to `shared/utils/` (e.g., `formatUtils.ts` for date formatting). This improves maintainability and ensures consistency across the codebase.
+
+### Code Comments
+
+- **No obvious comments**: Do not add comments that restate what the code already says. JSX section labels like `{/* Header */}`, `{/* Footer */}`, `{/* Comments list */}` are noise -- the code structure and element names make this clear.
+- **Only explain "why"**: Comments are valuable when they explain _why_ something non-obvious is done (e.g., a counter-intuitive workaround, a measurement trick, or a constraint that isn't visible from the code alone).
+- **Examples**:
+
+```typescript
+// ❌ Bad -- restates what the JSX already shows
+{/* Header */}
+<div className="border-b p-4">
+
+// ❌ Bad -- obvious from the code
+{/* Reply input */}
+<textarea placeholder="Add a reply..." />
+
+// ✅ Good -- explains a non-obvious technique
+// Measure full content height for CSS transition target.
+// Content is always rendered (at full width) but clipped by overflow:hidden.
+useLayoutEffect(() => { ... })
+
+// ✅ Good -- explains a constraint
+// Anchor at bottom-left corner (where the pointer is)
+transform: 'translate(0, -100%)',
+```
 
 ### Naming Conventions
 
@@ -191,7 +217,7 @@ import { describe, it, expect } from 'vitest'
 import { Canvas } from '../components/Canvas'
 
 describe('Canvas interactions', () => {
-  it('places crosshair on click', async () => {
+  it('creates comment thread on click', async () => {
     const user = userEvent.setup()
     render(<Canvas />)
     const viewport = screen.getByTestId('canvas-viewport')
@@ -203,7 +229,7 @@ describe('Canvas interactions', () => {
     ])
 
     await waitFor(() => {
-      expect(screen.getAllByTestId('crosshair-marker').length).toBeGreaterThan(0)
+      expect(screen.getAllByTestId('comment-pin').length).toBeGreaterThan(0)
     })
   })
 })
@@ -221,12 +247,59 @@ describe('Canvas interactions', () => {
 - Pure functions first (coordinate conversion, clamp) -- highest value, no mocking needed
 - Hook behavior second (camera state transitions, cursor changes) -- use `renderHook`
 - Component rendering third (smoke tests, DOM structure) -- use `render`
-- Test user interactions, not implementation details
 - Use React Testing Library queries (getByRole, getByText, getByTestId, etc.)
 - Use `data-testid` attributes for structural elements that lack accessible roles
+
+### Avoid Testing Implementation Details
+
+**This is a core principle.** Tests should verify _what_ the component does, not _how_ it's styled or structured internally. Tests coupled to implementation details break on refactors that don't change behavior.
+
+**Never query by CSS class names** (Tailwind or otherwise):
+
+```typescript
+// ❌ Bad -- coupled to Tailwind classes, breaks if styling changes
+const badge = document.querySelector('.bg-green-100.text-green-800')
+const rects = world.querySelectorAll('.bg-blue-500, .bg-green-500')
+const list = document.querySelector('.divide-y')
+
+// ✅ Good -- query by semantic attributes that express meaning
+const badge = screen.getByTestId('thread-status-badge')
+const rects = screen.getAllByTestId('demo-rect')
+const item = screen.getByTestId('thread-item')
+```
+
+**Use semantic `data-*` attributes for visual state** instead of asserting on CSS classes:
+
+```typescript
+// ❌ Bad -- checks Tailwind class for "resolved" visual
+const greenBg = pin.querySelector('.bg-green-500')
+expect(greenBg).toBeInTheDocument()
+
+// ✅ Good -- checks semantic state via data attribute
+expect(pin).toHaveAttribute('data-resolved', 'true')
+```
+
+**Prefer accessible queries** (`getByRole`, `getByText`, `getByLabelText`, `getByPlaceholderText`, `getByDisplayValue`) over `querySelector` whenever possible. Fall back to `getByTestId` only when no accessible query fits.
+
+**What to test in component tests:**
+
+- Rendered text content and structure (via accessible queries)
+- User interaction outcomes (click → callback called, type → state changes)
+- Conditional rendering (empty states, loading, error)
+- Semantic state (`data-*` attributes for resolved/selected/active)
+
+**What NOT to test:**
+
+- CSS class names (Tailwind, BEM, or any styling classes)
+- Internal DOM structure or nesting depth
+- Specific HTML tag choices (unless semantically meaningful)
+- Animation or transition implementation
 - **React import in tests**: Even with `jsx: "react-jsx"`, TypeScript requires `import React from 'react'` in test files for JSX type resolution
 - **Coordinate-based interactions**: Use `userEvent.pointer()` with `coords` for canvas/coordinate-based clicks, not `userEvent.click()` (which doesn't accept coordinates)
 - **RefObject types**: `useRef<T>(null)` returns `RefObject<T | null>` - interface types should match this (e.g., `React.RefObject<HTMLDivElement | null>`)
+- **Mocking Zustand stores in tests**: When mocking Zustand stores with `vi.mock()`, create complete mock state objects that match the store type exactly. Use `Object.assign()` to attach `getState()` static method. For type imports in test files, prefer relative imports over path aliases to avoid IDE language server resolution issues with mocked modules.
+- **Path aliases in test files**: TypeScript language server can have trouble resolving path aliases (`@/features/...`) in test files when the same module path is mocked. Use relative imports for type-only imports in test files to ensure reliable IDE support.
+- **Type-only imports**: When importing types from barrel exports in test files with mocks, use relative imports (e.g., `../../comments/store/useEditorStore`) instead of path aliases to avoid resolution conflicts between the mock and the type import.
 
 ## Codebase Overview
 
@@ -236,40 +309,73 @@ describe('Canvas interactions', () => {
 
 The main canvas feature for Miro-like functionality:
 
-- **Components**: `Canvas.tsx` - Slim render-only component; renders viewport/world structure, grid background, demo objects, crosshairs, and zoom indicator. All interaction logic is delegated to the `useCanvasInteraction` hook.
+- **Components**: `Canvas.tsx` - Slim render-only component; renders viewport/world structure, grid background, demo objects, comment pins, and zoom indicator. All interaction logic is delegated to the `useCanvasInteraction` hook.
 - **Hooks**:
-  - `useCanvasInteraction.ts` - Core interaction hook: manages camera state, crosshair placement, cursor state, trackpad pan/zoom (non-passive wheel listener with `ctrlKey` detection), space+drag pan, middle-mouse pan, and click-to-place.
+  - `useCanvasInteraction.ts` - Core interaction hook: manages camera state, cursor state, trackpad pan/zoom (non-passive wheel listener with `ctrlKey` detection), space+drag pan, middle-mouse pan, click-to-create-thread, and smooth camera focus animation. Integrates with comment editor store for thread creation and camera focus.
   - `useCanvas.ts` - Canvas feature hook (placeholder, uses Zustand store)
 - **Utils**: `cameraUtils.ts` - Pure functions (`viewportToWorld`, `worldToViewport`, `clamp`) and constants (`GRID_SIZE`, `MIN_ZOOM`, `MAX_ZOOM`, `DRAG_THRESHOLD`, `ZOOM_SENSITIVITY`)
 - **Store**: `useCanvasStore.ts` - Canvas state management (placeholder, currently using inline state in hook)
-- **Types**: `Camera`, `Crosshair`, `CanvasItem` - Canvas type definitions
-- **Tests**: `cameraUtils.test.ts` (33 pure function tests), `useCanvasInteraction.test.ts` (18 hook behavior tests), `Canvas.test.tsx` (9 component tests including integration), `CrosshairMarker.test.tsx` (5 component tests) - **65 tests total**
+- **Types**: `Camera`, `CanvasItem` - Canvas type definitions
+- **Tests**: `cameraUtils.test.ts` (33 pure function tests), `useCanvasInteraction.test.ts` (hook behavior tests with mocked editor store), `Canvas.test.tsx` (component tests including integration) - tests updated to reflect comment system integration
 - **API**: Placeholder API functions for canvas data
+- **Cross-Feature Dependency**: Canvas imports `useEditorStore` from `@/features/comments/store` for thread creation and camera focus coordination
 
 **Canvas File Structure**:
 
 ```
 features/canvas/
 ├── components/
-│   ├── Canvas.tsx              # Slim render-only component
-│   └── CrosshairMarker.tsx    # Crosshair marker component
+│   └── Canvas.tsx              # Slim render-only component
 ├── hooks/
-│   ├── useCanvasInteraction.ts # Pan, zoom, pointer, keyboard logic
+│   ├── useCanvasInteraction.ts # Pan, zoom, pointer, keyboard logic + comment integration
 │   └── useCanvas.ts            # Zustand store hook (placeholder)
 ├── utils/
 │   └── cameraUtils.ts          # Pure functions and constants
 ├── __tests__/
 │   ├── cameraUtils.test.ts     # Pure function tests (33 tests)
-│   ├── useCanvasInteraction.test.ts  # Hook behavior tests (18 tests)
-│   ├── Canvas.test.tsx         # Component tests: smoke + integration (9 tests)
-│   └── CrosshairMarker.test.tsx # Component tests (5 tests)
+│   ├── useCanvasInteraction.test.ts  # Hook behavior tests (with mocked editor store)
+│   └── Canvas.test.tsx         # Component tests: smoke + integration
 ├── store/
 │   ├── useCanvasStore.ts
 │   └── index.ts
 ├── types/
-│   └── index.ts                # Camera, Crosshair, CanvasItem
+│   └── index.ts                # Camera, CanvasItem
 └── api/
     └── index.ts
+```
+
+#### Comments Feature (`src/features/comments/`)
+
+A complete comment thread system integrated with the canvas:
+
+- **Components**:
+  - `CommentPin.tsx` - Speech bubble-shaped pin marker positioned in world layer, clickable, shows hover tooltip with thread preview
+  - `ThreadPanel.tsx` - Thread detail view: metadata, comment list with inline editing, reply input, resolve toggle
+  - `ThreadList.tsx` - Filterable list of all threads (open/resolved/all) with click-to-focus animation
+  - `SidePanel.tsx` - Container component that switches between ThreadList and ThreadPanel based on selection
+- **Store**: `useEditorStore.ts` - Zustand store managing threads, selectedThreadId, filter, focusTarget state and all CRUD actions
+- **Types**: `Comment`, `CommentThread` - Comment system type definitions
+- **Tests**: `useEditorStore.test.ts` (store action tests), `CommentPin.test.tsx` (component tests)
+- **Integration**: Canvas feature imports comment store for thread creation; App.tsx renders SidePanel alongside Canvas
+
+**Comments File Structure**:
+
+```
+features/comments/
+├── components/
+│   ├── CommentPin.tsx          # Speech bubble pin with hover tooltip
+│   ├── ThreadPanel.tsx         # Thread detail view
+│   ├── ThreadList.tsx          # Filterable thread list
+│   ├── SidePanel.tsx           # Container (list or panel)
+│   └── index.ts                # Barrel export
+├── store/
+│   ├── useEditorStore.ts       # Zustand store (EditorStore type exported)
+│   └── index.ts                # Barrel export
+├── types/
+│   └── index.ts                # Comment, CommentThread
+└── __tests__/
+    ├── useEditorStore.test.ts  # Store tests
+    └── CommentPin.test.tsx      # Component tests
 ```
 
 ### Shared Components

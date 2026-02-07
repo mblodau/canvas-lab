@@ -1,8 +1,44 @@
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+import type { EditorStore } from '../../comments/store/useEditorStore'
 import { useCanvasInteraction } from '../hooks/useCanvasInteraction'
 import { MIN_ZOOM, MAX_ZOOM } from '../utils/cameraUtils'
+
+const { mockAddThreadAt, mockClearFocusTarget, getMockFocusTarget, setMockFocusTarget } =
+  vi.hoisted(() => {
+    let focusTarget: { x: number; y: number } | null = null
+    return {
+      mockAddThreadAt: vi.fn(),
+      mockClearFocusTarget: vi.fn(),
+      getMockFocusTarget: () => focusTarget,
+      setMockFocusTarget: (value: { x: number; y: number } | null) => {
+        focusTarget = value
+      },
+    }
+  })
+
+vi.mock('@/features/comments/store', () => {
+  const getState = (): Pick<EditorStore, 'addThreadAt' | 'clearFocusTarget' | 'focusTarget'> => ({
+    addThreadAt: mockAddThreadAt,
+    clearFocusTarget: mockClearFocusTarget,
+    focusTarget: getMockFocusTarget(),
+  })
+
+  const useEditorStore = Object.assign(
+    (selector?: (state: EditorStore) => unknown) => {
+      if (!selector) return getState()
+      const mockState: Pick<EditorStore, 'focusTarget' | 'clearFocusTarget'> = {
+        focusTarget: getMockFocusTarget(),
+        clearFocusTarget: mockClearFocusTarget,
+      }
+      return selector(mockState as EditorStore)
+    },
+    { getState }
+  )
+
+  return { useEditorStore }
+})
 
 // Helper: create a mock PointerEvent with clientX/clientY relative to element
 const createPointerEvent = (
@@ -39,8 +75,10 @@ const createPointerEvent = (
 }
 
 describe('useCanvasInteraction', () => {
-  // Mock crypto.randomUUID for deterministic tests
   beforeEach(() => {
+    vi.clearAllMocks()
+    setMockFocusTarget(null)
+    // Mock crypto.randomUUID for deterministic tests
     let counter = 0
     vi.spyOn(crypto, 'randomUUID').mockImplementation(
       () => `test-uuid-${++counter}` as `${string}-${string}-${string}-${string}-${string}`
@@ -51,11 +89,6 @@ describe('useCanvasInteraction', () => {
     it('starts with camera at origin and zoom 1', () => {
       const { result } = renderHook(() => useCanvasInteraction())
       expect(result.current.camera).toEqual({ x: 0, y: 0, zoom: 1 })
-    })
-
-    it('starts with no crosshairs', () => {
-      const { result } = renderHook(() => useCanvasInteraction())
-      expect(result.current.crosshairs).toEqual([])
     })
 
     it('starts with default cursor', () => {
@@ -228,8 +261,8 @@ describe('useCanvasInteraction', () => {
     })
   })
 
-  describe('click to place crosshair', () => {
-    it('places a crosshair on click (no drag)', () => {
+  describe('click to create thread', () => {
+    it('calls addThreadAt on click (no drag)', () => {
       const { result } = renderHook(() => useCanvasInteraction())
 
       // Pointer down at (100, 200)
@@ -254,15 +287,11 @@ describe('useCanvasInteraction', () => {
         )
       })
 
-      expect(result.current.crosshairs).toHaveLength(1)
-      expect(result.current.crosshairs[0]).toEqual({
-        id: 'test-uuid-1',
-        x: 100,
-        y: 200,
-      })
+      expect(mockAddThreadAt).toHaveBeenCalledTimes(1)
+      expect(mockAddThreadAt).toHaveBeenCalledWith({ x: 100, y: 200 })
     })
 
-    it('does not place crosshair when drag exceeds threshold', () => {
+    it('does not call addThreadAt when drag exceeds threshold', () => {
       const { result } = renderHook(() => useCanvasInteraction())
 
       act(() => {
@@ -286,10 +315,10 @@ describe('useCanvasInteraction', () => {
         )
       })
 
-      expect(result.current.crosshairs).toHaveLength(0)
+      expect(mockAddThreadAt).not.toHaveBeenCalled()
     })
 
-    it('does not place crosshair on right click', () => {
+    it('does not call addThreadAt on right click', () => {
       const { result } = renderHook(() => useCanvasInteraction())
 
       act(() => {
@@ -312,10 +341,10 @@ describe('useCanvasInteraction', () => {
         )
       })
 
-      expect(result.current.crosshairs).toHaveLength(0)
+      expect(mockAddThreadAt).not.toHaveBeenCalled()
     })
 
-    it('places multiple crosshairs on multiple clicks', () => {
+    it('calls addThreadAt multiple times on multiple clicks', () => {
       const { result } = renderHook(() => useCanvasInteraction())
 
       // First click
@@ -338,9 +367,9 @@ describe('useCanvasInteraction', () => {
         )
       })
 
-      expect(result.current.crosshairs).toHaveLength(2)
-      expect(result.current.crosshairs[0].id).toBe('test-uuid-1')
-      expect(result.current.crosshairs[1].id).toBe('test-uuid-2')
+      expect(mockAddThreadAt).toHaveBeenCalledTimes(2)
+      expect(mockAddThreadAt).toHaveBeenNthCalledWith(1, { x: 100, y: 100 })
+      expect(mockAddThreadAt).toHaveBeenNthCalledWith(2, { x: 200, y: 300 })
     })
   })
 

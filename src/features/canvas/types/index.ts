@@ -6,12 +6,6 @@ export interface Camera {
   zoom: number
 }
 
-export interface Crosshair {
-  id: string
-  x: number
-  y: number
-}
-
 export interface CanvasItem {
   id: string
   type: string

@@ -4,7 +4,51 @@ import userEvent from '@testing-library/user-event'
 import React from 'react'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
+import type { EditorStore } from '../../comments/store/useEditorStore'
+import type { CommentThread } from '../../comments/types'
 import { Canvas } from '../components/Canvas'
+
+// Mock the editor store
+const mockThreads: CommentThread[] = []
+const mockAddThreadAt = vi.fn()
+const mockSelectThread = vi.fn()
+const mockSetFilter = vi.fn()
+const mockAddComment = vi.fn()
+const mockUpdateComment = vi.fn()
+const mockToggleResolved = vi.fn()
+const mockFocusOnThread = vi.fn()
+const mockClearFocusTarget = vi.fn()
+
+// Create a complete mock state that matches EditorStore
+const createMockState = (): EditorStore => ({
+  threads: mockThreads,
+  selectedThreadId: null,
+  filter: 'all',
+  focusTarget: null,
+  addThreadAt: mockAddThreadAt,
+  selectThread: mockSelectThread,
+  setFilter: mockSetFilter,
+  addComment: mockAddComment,
+  updateComment: mockUpdateComment,
+  toggleResolved: mockToggleResolved,
+  focusOnThread: mockFocusOnThread,
+  clearFocusTarget: mockClearFocusTarget,
+})
+
+vi.mock('@/features/comments/store', () => ({
+  useEditorStore: Object.assign(
+    (selector?: (state: EditorStore) => unknown) => {
+      if (!selector) {
+        return createMockState()
+      }
+      const mockState = createMockState()
+      return selector(mockState)
+    },
+    {
+      getState: () => createMockState(),
+    }
+  ),
+}))
 
 describe('Canvas', () => {
   describe('rendering (smoke tests)', () => {
@@ -29,23 +73,23 @@ describe('Canvas', () => {
 
     it('renders demo rectangles', () => {
       render(<Canvas />)
-      const world = screen.getByTestId('canvas-world')
-      // Two demo rectangles should be present as children
-      const rects = world.querySelectorAll('.bg-blue-500, .bg-green-500')
+      const rects = screen.getAllByTestId('demo-rect')
       expect(rects).toHaveLength(2)
     })
   })
 
   describe('user interactions', () => {
     beforeEach(() => {
-      // Mock crypto.randomUUID for deterministic crosshair IDs
+      vi.clearAllMocks()
+      mockThreads.length = 0
+      // Mock crypto.randomUUID for deterministic thread IDs
       let counter = 0
       vi.spyOn(crypto, 'randomUUID').mockImplementation(
         () => `test-uuid-${++counter}` as `${string}-${string}-${string}-${string}-${string}`
       )
     })
 
-    it('places a crosshair when user clicks on canvas', async () => {
+    it('calls addThreadAt when user clicks on canvas', async () => {
       const user = userEvent.setup()
       render(<Canvas />)
 
@@ -57,45 +101,43 @@ describe('Canvas', () => {
         { keys: '[MouseLeft]' },
       ])
 
-      // Wait for crosshair to appear
+      // Wait for addThreadAt to be called
       await waitFor(() => {
-        const markers = screen.queryAllByTestId('crosshair-marker')
-        expect(markers.length).toBeGreaterThan(0)
+        expect(mockAddThreadAt).toHaveBeenCalled()
       })
 
-      const markers = screen.getAllByTestId('crosshair-marker')
-      expect(markers).toHaveLength(1)
+      expect(mockAddThreadAt).toHaveBeenCalledWith({ x: 400, y: 300 })
     })
 
-    it('places multiple crosshairs on multiple clicks', async () => {
-      const user = userEvent.setup()
+    it('renders comment pins from store', () => {
+      mockThreads.push(
+        {
+          id: 'thread-1',
+          x: 100,
+          y: 200,
+          resolved: false,
+          createdAt: new Date().toISOString(),
+          createdBy: 'User',
+          comments: [],
+        },
+        {
+          id: 'thread-2',
+          x: 300,
+          y: 400,
+          resolved: false,
+          createdAt: new Date().toISOString(),
+          createdBy: 'User',
+          comments: [],
+        }
+      )
+
       render(<Canvas />)
 
-      const viewport = screen.getByTestId('canvas-viewport')
-
-      // First click
-      await user.pointer([
-        { target: viewport, coords: { clientX: 100, clientY: 100 } },
-        { keys: '[MouseLeft]' },
-      ])
-      await waitFor(() => {
-        expect(screen.getAllByTestId('crosshair-marker')).toHaveLength(1)
-      })
-
-      // Second click
-      await user.pointer([
-        { target: viewport, coords: { clientX: 200, clientY: 200 } },
-        { keys: '[MouseLeft]' },
-      ])
-      await waitFor(() => {
-        expect(screen.getAllByTestId('crosshair-marker')).toHaveLength(2)
-      })
-
-      const markers = screen.getAllByTestId('crosshair-marker')
-      expect(markers).toHaveLength(2)
+      const pins = screen.getAllByTestId('comment-pin')
+      expect(pins).toHaveLength(2)
     })
 
-    it('does not place crosshair when user drags (exceeds threshold)', async () => {
+    it('does not call addThreadAt when user drags (exceeds threshold)', async () => {
       const user = userEvent.setup()
       render(<Canvas />)
 
@@ -108,11 +150,10 @@ describe('Canvas', () => {
         { keys: '[/MouseLeft]' },
       ])
 
-      // Wait a bit to ensure no crosshair was placed
+      // Wait a bit to ensure addThreadAt was not called
       await waitFor(
         () => {
-          const markers = screen.queryAllByTestId('crosshair-marker')
-          expect(markers).toHaveLength(0)
+          expect(mockAddThreadAt).not.toHaveBeenCalled()
         },
         { timeout: 100 }
       )

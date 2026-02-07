@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 
-import type { Camera, Crosshair } from '../types'
+import { useEditorStore } from '@/features/comments/store'
+
+import type { Camera } from '../types'
 import {
   viewportToWorld,
   clamp,
@@ -16,7 +18,6 @@ export type CursorStyle = 'default' | 'grab' | 'grabbing'
 
 export interface CanvasInteraction {
   camera: Camera
-  crosshairs: Crosshair[]
   cursor: CursorStyle
   viewportRef: React.RefObject<HTMLDivElement | null>
   handlers: {
@@ -36,13 +37,16 @@ export interface CanvasInteraction {
  * - Pinch-to-zoom → zoom at cursor (wheel with ctrlKey)
  * - Space + drag → pan mode
  * - Middle mouse drag → pan mode
- * - Left click (no drag) → place crosshair
+ * - Left click (no drag) → create comment thread
  */
 export const useCanvasInteraction = (): CanvasInteraction => {
   // Camera state
   const [camera, setCamera] = useState<Camera>({ x: 0, y: 0, zoom: 1 })
-  const [crosshairs, setCrosshairs] = useState<Crosshair[]>([])
   const [cursor, setCursor] = useState<CursorStyle>('default')
+
+  // Subscribe to focusTarget from editor store
+  const focusTarget = useEditorStore(state => state.focusTarget)
+  const clearFocusTarget = useEditorStore(state => state.clearFocusTarget)
 
   // Interaction refs (mutable, not rendered)
   const isPanning = useRef(false)
@@ -58,10 +62,85 @@ export const useCanvasInteraction = (): CanvasInteraction => {
     cameraRef.current = camera
   }, [camera])
 
+  // Smooth camera focus animation
+  useEffect(() => {
+    if (!focusTarget) return
+
+    const el = viewportRef.current
+    if (!el) return
+
+    const targetX = focusTarget.x
+    const targetY = focusTarget.y
+
+    // Calculate target camera position to center the target in viewport
+    const rect = el.getBoundingClientRect()
+    const viewportCenterX = rect.width / 2
+    const viewportCenterY = rect.height / 2
+
+    // Target camera position: world point should be at viewport center
+    const targetCameraX = targetX - viewportCenterX / cameraRef.current.zoom
+    const targetCameraY = targetY - viewportCenterY / cameraRef.current.zoom
+
+    const LERP_FACTOR = 0.1
+    const DISTANCE_THRESHOLD = 1 // pixels
+
+    let animationFrameId: number | null = null
+
+    const animate = () => {
+      const current = cameraRef.current
+      const dx = targetCameraX - current.x
+      const dy = targetCameraY - current.y
+      const distance = Math.sqrt(dx * dx + dy * dy)
+
+      if (distance < DISTANCE_THRESHOLD) {
+        // Animation complete
+        setCamera({
+          x: targetCameraX,
+          y: targetCameraY,
+          zoom: current.zoom,
+        })
+        clearFocusTarget()
+        return
+      }
+
+      // Lerp towards target
+      setCamera({
+        x: current.x + dx * LERP_FACTOR,
+        y: current.y + dy * LERP_FACTOR,
+        zoom: current.zoom,
+      })
+
+      animationFrameId = requestAnimationFrame(animate)
+    }
+
+    animationFrameId = requestAnimationFrame(animate)
+
+    return () => {
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId)
+      }
+    }
+  }, [focusTarget, clearFocusTarget])
+
   // --- Keyboard handling (space bar for pan mode) ---
 
   useEffect(() => {
+    // Check if the event target is an editable element (input, textarea, contentEditable)
+    const isEditableElement = (target: EventTarget | null): boolean => {
+      if (!target || !(target instanceof HTMLElement)) return false
+      return (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target.isContentEditable
+      )
+    }
+
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept space if user is typing in an editable element
+      if (isEditableElement(e.target)) {
+        return
+      }
+
       if (e.code === 'Space' && !e.repeat) {
         e.preventDefault()
         spacePressed.current = true
@@ -72,6 +151,11 @@ export const useCanvasInteraction = (): CanvasInteraction => {
     }
 
     const handleKeyUp = (e: KeyboardEvent) => {
+      // Don't intercept space if user is typing in an editable element
+      if (isEditableElement(e.target)) {
+        return
+      }
+
       if (e.code === 'Space') {
         spacePressed.current = false
         if (!isPanning.current) {
@@ -179,10 +263,11 @@ export const useCanvasInteraction = (): CanvasInteraction => {
     const distanceSquared = squaredDistance(sx, sy, pointerStart.current.x, pointerStart.current.y)
 
     if (distanceSquared < DRAG_THRESHOLD * DRAG_THRESHOLD && e.button === 0) {
-      // Place crosshair at world coordinates
+      // Create comment thread at world coordinates
       const cam = cameraRef.current
       const worldPos = viewportToWorld(sx, sy, cam)
-      setCrosshairs(prev => [...prev, { id: crypto.randomUUID(), x: worldPos.x, y: worldPos.y }])
+      const { addThreadAt } = useEditorStore.getState()
+      addThreadAt({ x: worldPos.x, y: worldPos.y })
     }
   }, [])
 
@@ -192,7 +277,6 @@ export const useCanvasInteraction = (): CanvasInteraction => {
 
   return {
     camera,
-    crosshairs,
     cursor,
     viewportRef,
     handlers: {

@@ -1,4 +1,5 @@
 import { Canvas } from '@/features/canvas/components/Canvas'
+import { SidePanel } from '@/features/comments/components'
 
 function App() {
   return (
@@ -7,8 +8,11 @@ function App() {
         <h1 className="text-2xl font-bold text-gray-900">Canvas Lab</h1>
         <p className="text-sm text-gray-600">Miro-like canvas application</p>
       </header>
-      <main className="h-[calc(100vh-80px)]">
-        <Canvas />
+      <main className="flex h-[calc(100vh-80px)]">
+        <div className="flex-1">
+          <Canvas />
+        </div>
+        <SidePanel />
       </main>
     </div>
   )

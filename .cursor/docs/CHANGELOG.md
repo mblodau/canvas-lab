@@ -18,6 +18,70 @@ Each entry follows this format:
 
 ---
 
+## 2026-02-07 - Retrospective: Code Quality Analysis Session
+
+### Changed
+
+- **What**: Added explicit DRY (Don't Repeat Yourself) principle to Code Organization section in Best Practices. States that duplicated logic should be extracted to shared utilities (e.g., `shared/utils/formatUtils.ts`).
+- **Why**: During code quality analysis, discovered `formatRelativeTime` function duplicated across three components (`CommentPin`, `ThreadPanel`, `ThreadList`). Extracted to shared utility, but the DRY principle was only implicit in the docs. Making it explicit prevents future duplication.
+- **When**: 2026-02-07
+
+---
+
+## 2026-02-07 - No Obvious Code Comments
+
+### Changed
+
+- **What**: Added "Code Comments" section to Best Practices. Only comments explaining _why_ something non-obvious is done are allowed. Section label comments in JSX (`{/* Header */}`, `{/* Footer */}`, etc.) are explicitly prohibited as noise. Includes do/don't examples.
+- **Why**: Components had accumulated `{/* Header */}`, `{/* Comments list */}`, `{/* Reply input */}` etc. throughout JSX -- these restate what the code already shows and add clutter. Removed all such comments from `ThreadPanel.tsx`, `CommentPin.tsx`, `ThreadList.tsx`, and `Canvas.tsx`. Added the rule to prevent recurrence.
+- **When**: 2026-02-07
+
+---
+
+## 2026-02-07 - No Implementation Details in Unit Tests
+
+### Changed
+
+- **What**: Added dedicated "Avoid Testing Implementation Details" section to Testing Guidelines with clear do/don't examples. Covers: never query by CSS class names, use semantic `data-*` attributes for visual state, prefer accessible queries, explicit lists of what to test vs. what not to test.
+- **Why**: Tests were querying Tailwind classes (`.bg-green-500`, `.divide-y`, `.bg-blue-100.text-blue-800`) to assert visual state and find DOM elements. These break on any styling refactor without behavior changes. Replaced all violations across `CommentPin.test.tsx`, `ThreadList.test.tsx`, and `Canvas.test.tsx` with semantic `data-testid` and `data-*` attribute queries. This principle needed to be explicit in the docs to prevent regression.
+- **When**: 2026-02-07
+
+---
+
+## 2026-02-07 - Retrospective: Comment Thread System Implementation
+
+### Changed
+
+- **What**: Added Comments Feature section to Codebase Overview documenting the complete comment thread system (CommentPin, ThreadPanel, ThreadList, SidePanel, useEditorStore)
+- **Why**: New feature was implemented but not documented; developers need to understand the comment system architecture and how it integrates with canvas
+- **When**: 2026-02-07 16:45:00
+
+- **What**: Updated Canvas Feature section to reflect removal of Crosshair system and integration with comment thread system (click-to-create-thread, smooth camera focus animation)
+- **Why**: Canvas feature changed significantly - removed crosshair debug markers, added comment pin rendering, integrated with editor store for thread creation
+- **When**: 2026-02-07 16:45:00
+
+- **What**: Updated Interaction Patterns section to change "place crosshair" to "create comment thread" and added smooth camera focus animation pattern
+- **Why**: Canvas click behavior changed from placing debug markers to creating comment threads; new camera focus animation feature added
+- **When**: 2026-02-07 16:45:00
+
+- **What**: Updated Feature-Based Architecture Key Principles to clarify pragmatic cross-feature dependencies (canvas importing comment store is acceptable one-way dependency)
+- **Why**: Discovered during implementation that strict "no cross-feature imports" rule was too rigid; canvas and comments are tightly coupled and one-way dependency is pragmatic
+- **When**: 2026-02-07 16:45:00
+
+- **What**: Added Testing Guidelines section on mocking Zustand stores in tests (complete mock state objects, Object.assign for getState, relative imports for types)
+- **Why**: Encountered type errors and IDE resolution issues when mocking Zustand stores; discovered patterns for reliable mocking that weren't documented
+- **When**: 2026-02-07 16:45:00
+
+- **What**: Added Testing Guidelines section on path alias resolution issues in test files (use relative imports for type-only imports when module is mocked)
+- **Why**: TypeScript language server had trouble resolving path aliases in test files with mocked modules; relative imports work reliably
+- **When**: 2026-02-07 16:45:00
+
+- **What**: Removed Crosshair references from Canvas Feature documentation (CrosshairMarker component, Crosshair type, crosshair placement)
+- **Why**: Crosshair debug system was completely removed and replaced with comment thread system
+- **When**: 2026-02-07 16:45:00
+
+---
+
 ## 2026-02-07 - Retrospective: Testing and TypeScript Guidance Updates
 
 ### Changed
