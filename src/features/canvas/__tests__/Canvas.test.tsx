@@ -77,10 +77,10 @@ describe('Canvas', () => {
       expect(zoomIndicator).toHaveTextContent('100%')
     })
 
-    it('renders demo rectangles', () => {
+    it('renders demo items', () => {
       render(<Canvas />)
-      const rects = screen.getAllByTestId('demo-rect')
-      expect(rects).toHaveLength(2)
+      const items = screen.getAllByTestId('demo-item')
+      expect(items).toHaveLength(5)
     })
   })
 

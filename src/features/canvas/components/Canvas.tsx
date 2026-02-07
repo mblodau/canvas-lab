@@ -1,6 +1,7 @@
 import { CommentPin } from '@/features/comments/components/CommentPin'
 import { useEditorStore } from '@/features/comments/store'
 
+import { DEMO_ITEMS } from '../data/demoItems'
 import { useCanvasInteraction } from '../hooks/useCanvasInteraction'
 import { getGridStyle } from '../utils/cameraUtils'
 
@@ -24,17 +25,14 @@ export const Canvas = () => {
           transform: `scale(${camera.zoom}) translate(${-camera.x}px, ${-camera.y}px)`,
         }}
       >
-        <div
-          data-testid="demo-rect"
-          className="absolute w-20 h-20 bg-blue-500 border-2 border-blue-700"
-          style={{ left: '500px', top: '300px' }}
-        />
-
-        <div
-          data-testid="demo-rect"
-          className="absolute w-20 h-20 bg-green-500 border-2 border-green-700"
-          style={{ left: '-200px', top: '-150px' }}
-        />
+        {DEMO_ITEMS.map(item => (
+          <div
+            key={item.id}
+            data-testid="demo-item"
+            className={`absolute ${item.className}`}
+            style={item.style}
+          />
+        ))}
       </div>
 
       <div data-testid="canvas-overlay" className="absolute inset-0 pointer-events-none">

@@ -55,18 +55,15 @@ The application follows a **feature-based architecture** pattern where each feat
 
 ```
 src/
-├── app/          # App shell (routing, providers, layout)
-├── features/     # Feature modules (canvas, etc.)
-├── shared/       # Shared utilities and UI (no feature knowledge)
-└── entities/     # Domain objects shared across features
+├── features/     # Feature modules (canvas, comments, etc.)
+└── shared/       # Shared utilities (no feature knowledge)
 ```
 
 ### Key Principles
 
-1. **Feature Isolation**: Each feature contains all its code (components, hooks, store, API, types, tests)
+1. **Feature Isolation**: Each feature contains all its code (components, hooks, store, types, tests)
 2. **Pragmatic Cross-Feature Dependencies**: While features should ideally be isolated, pragmatic one-way dependencies are acceptable when features are tightly coupled (e.g., canvas importing comment store). The dependent feature (canvas) knows about the dependency (comments), but the dependency (comments) has no knowledge of the dependent feature.
 3. **Shared Layer**: Contains only reusable code with no feature-specific knowledge
-4. **App Layer**: Contains app-level concerns (routing, providers, layout)
 
 ### Feature Structure
 
@@ -76,9 +73,9 @@ Each feature follows this structure:
 features/[feature-name]/
 ├── components/   # Feature-specific UI components
 ├── hooks/        # Feature-specific hooks
-├── store/        # Zustand store for feature state
-├── api/          # API calls for this feature
+├── store/        # Zustand store for feature state (when needed)
 ├── types/        # TypeScript types
+├── utils/        # Utility functions (when needed)
 └── __tests__/    # Feature tests
 ```
 
@@ -122,8 +119,8 @@ transform: 'translate(0, -100%)',
 
 - **Components**: PascalCase (e.g., `Canvas.tsx`)
 - **Hooks**: camelCase starting with "use" (e.g., `useCanvas.ts`)
-- **Stores**: camelCase ending with "Store" (e.g., `useCanvasStore.ts`)
-- **Types**: PascalCase interfaces/types (e.g., `CanvasItem`)
+- **Stores**: camelCase ending with "Store" (e.g., `useEditorStore.ts`)
+- **Types**: PascalCase interfaces/types (e.g., `Camera`, `CommentThread`)
 - **Files**: Match export name for single-export files (e.g., `Canvas.tsx` exports `Canvas`)
 - **Utility files**: camelCase, descriptive domain name (e.g., `cameraUtils.ts` for camera/coordinate utilities, `formatUtils.ts` for formatting utilities)
 
@@ -134,7 +131,7 @@ Use path aliases for cleaner imports:
 ```typescript
 // ✅ Good
 import { Canvas } from '@/features/canvas/components/Canvas'
-import { Button } from '@/shared/ui'
+import { formatRelativeTime } from '@/shared/utils/formatUtils'
 
 // ❌ Bad
 import { Canvas } from '../../../features/canvas/components/Canvas'
@@ -142,10 +139,8 @@ import { Canvas } from '../../../features/canvas/components/Canvas'
 
 ### State Management
 
-- **Feature-level state**: Use Zustand stores in `features/[name]/store/`
-- **Global app state**: Use Zustand in `app/providers/` if needed
-- **Component state**: Use `useState` for local component state
-- **Server state**: Consider React Query or similar for server state
+- **Feature-level state**: Use Zustand stores in `features/[name]/store/` when needed
+- **Component state**: Use `useState`/`useRef` for local component state
 - **Prototyping/Hello-world**: For initial implementations and proof-of-concepts, inline `useState`/`useRef` is acceptable. Migrate to Zustand when patterns stabilize.
 
 ## Testing Guidelines
@@ -236,12 +231,6 @@ describe('Canvas interactions', () => {
 })
 ```
 
-### MSW Usage
-
-- Define handlers in `tests/mocks/handlers.ts`
-- Use `setupServer` from `msw/node` for tests
-- Mock API calls at the network level, not component level
-
 ### Test Coverage
 
 - Aim for high coverage of business logic
@@ -311,14 +300,10 @@ expect(pin).toHaveAttribute('data-resolved', 'true')
 The main canvas feature for Miro-like functionality:
 
 - **Components**: `Canvas.tsx` - Slim render-only component; renders viewport with ContentWorld layer (scales with zoom) and MetaOverlay layer (constant size), grid background, demo objects, comment pins, and zoom indicator. All interaction logic is delegated to the `useCanvasInteraction` hook.
-- **Hooks**:
-  - `useCanvasInteraction.ts` - Core interaction hook: manages camera state, cursor state, trackpad pan/zoom (non-passive wheel listener with `ctrlKey` detection), space+drag pan, middle-mouse pan, click-to-create-thread, and smooth camera focus animation. Integrates with comment editor store for thread creation and camera focus.
-  - `useCanvas.ts` - Canvas feature hook (placeholder, uses Zustand store)
+- **Hooks**: `useCanvasInteraction.ts` - Core interaction hook: manages camera state, cursor state, trackpad pan/zoom (non-passive wheel listener with `ctrlKey` detection), space+drag pan, middle-mouse pan, click-to-create-thread, and smooth camera focus animation. Integrates with comment editor store for thread creation and camera focus.
 - **Utils**: `cameraUtils.ts` - Pure functions (`viewportToWorld`, `worldToViewport`, `clamp`) and constants (`GRID_SIZE`, `MIN_ZOOM`, `MAX_ZOOM`, `DRAG_THRESHOLD`, `ZOOM_SENSITIVITY`)
-- **Store**: `useCanvasStore.ts` - Canvas state management (placeholder, currently using inline state in hook)
-- **Types**: `Camera`, `CanvasItem` - Canvas type definitions
+- **Types**: `Camera` - Canvas type definitions
 - **Tests**: `cameraUtils.test.ts` (33 pure function tests), `useCanvasInteraction.test.ts` (hook behavior tests with mocked editor store), `Canvas.test.tsx` (component tests including integration) - tests updated to reflect comment system integration
-- **API**: Placeholder API functions for canvas data
 - **Cross-Feature Dependency**: Canvas imports `useEditorStore` from `@/features/comments/store` for thread creation and camera focus coordination
 
 **Canvas File Structure**:
@@ -328,21 +313,15 @@ features/canvas/
 ├── components/
 │   └── Canvas.tsx              # Slim render-only component
 ├── hooks/
-│   ├── useCanvasInteraction.ts # Pan, zoom, pointer, keyboard logic + comment integration
-│   └── useCanvas.ts            # Zustand store hook (placeholder)
+│   └── useCanvasInteraction.ts # Pan, zoom, pointer, keyboard logic + comment integration
 ├── utils/
 │   └── cameraUtils.ts          # Pure functions and constants
-├── __tests__/
-│   ├── cameraUtils.test.ts     # Pure function tests (33 tests)
-│   ├── useCanvasInteraction.test.ts  # Hook behavior tests (with mocked editor store)
-│   └── Canvas.test.tsx         # Component tests: smoke + integration
-├── store/
-│   ├── useCanvasStore.ts
-│   └── index.ts
 ├── types/
-│   └── index.ts                # Camera, CanvasItem
-└── api/
-    └── index.ts
+│   └── index.ts                # Camera
+└── __tests__/
+    ├── cameraUtils.test.ts     # Pure function tests (33 tests)
+    ├── useCanvasInteraction.test.ts  # Hook behavior tests (with mocked editor store)
+    └── Canvas.test.tsx         # Component tests: smoke + integration
 ```
 
 #### Comments Feature (`src/features/comments/`)
@@ -379,11 +358,11 @@ features/comments/
     └── CommentPin.test.tsx      # Component tests
 ```
 
-### Shared Components
+### Shared Utilities
 
-#### UI Components (`src/shared/ui/`)
+#### Utilities (`src/shared/utils/`)
 
-- **Button**: Reusable button component with variants
+- **formatUtils.ts**: Date formatting utilities (`formatRelativeTime`)
 
 ### App Structure
 
@@ -397,14 +376,13 @@ features/comments/
 - **Vite** for building
 - **Tailwind CSS** for styling
 - **Vitest** for testing
-- **MSW** for API mocking
 - **Zustand** for state management
 - **ESLint** + **Prettier** for code quality
 
 ## Development Workflow
 
 1. Create feature in `src/features/[feature-name]/`
-2. Add components, hooks, store, API, types, tests
+2. Add components, hooks, store (when needed), types, utils (when needed), tests
 3. Use path aliases for imports
 4. Write tests alongside code
 5. Follow established patterns

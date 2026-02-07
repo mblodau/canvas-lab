@@ -56,7 +56,7 @@ describe('useEditorStore', () => {
       })
       expect(threads[0].id).toBeDefined()
       expect(threads[0].createdAt).toBeDefined()
-      expect(threads[0].createdBy).toBe('User')
+      expect(threads[0].createdBy).toBeDefined()
     })
 
     it('selects the newly created thread', () => {

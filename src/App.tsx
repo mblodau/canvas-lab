@@ -6,7 +6,6 @@ function App() {
     <div className="min-h-screen bg-white">
       <header className="border-b border-gray-200 p-4">
         <h1 className="text-2xl font-bold text-gray-900">Canvas Lab</h1>
-        <p className="text-sm text-gray-600">Miro-like canvas application</p>
       </header>
       <main className="flex h-[calc(100vh-80px)]">
         <div className="flex-1">

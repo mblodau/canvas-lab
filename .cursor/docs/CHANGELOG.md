@@ -18,6 +18,16 @@ Each entry follows this format:
 
 ---
 
+## 2026-02-07 - Final Cleanup Phase
+
+### Changed
+
+- **What**: Removed all unused boilerplate code scaffolded in phase 1: deleted `useCanvas.ts`, `useCanvasStore.ts`, canvas `store/` and `api/` directories, `Button.tsx` component, `shared/ui/` directory, default scaffold assets (`vite.svg`, `react.svg`), MSW handlers, and `styles/` directory. Removed unused `CanvasItem` type, TODO comments from `useEditorStore.ts`, favicon reference from `index.html`, and placeholder comments. Cleaned up unused path aliases (`@/app`, `@/entities`) from config files. Updated README.md to reflect actual project structure. Removed MSW from technology stack and testing guidelines.
+- **Why**: Phase 1 scaffolding included example/placeholder code to demonstrate the feature-based architecture pattern. After completing the actual implementation, all unused boilerplate needed to be removed to keep the codebase clean and accurate. This cleanup ensures the codebase only contains code that's actually used.
+- **When**: 2026-02-07
+
+---
+
 ## 2026-02-07 - Render Layers Refactor
 
 ### Changed

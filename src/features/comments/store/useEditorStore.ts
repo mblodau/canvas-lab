@@ -40,7 +40,7 @@ export const useEditorStore = create<EditorStore>(set => ({
       y: pos.y,
       resolved: false,
       createdAt: now,
-      createdBy: 'User', // TODO: get from auth context
+      createdBy: 'Ingemar Backman',
       comments: [],
     }
     set(state => ({
@@ -61,7 +61,7 @@ export const useEditorStore = create<EditorStore>(set => ({
     const now = new Date().toISOString()
     const newComment: Comment = {
       id: crypto.randomUUID(),
-      author: 'User', // TODO: get from auth context
+      author: 'User',
       createdAt: now,
       text,
     }

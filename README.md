@@ -9,7 +9,6 @@ A Miro-like canvas-based web application built with React, TypeScript, and moder
 - **Vite** - Fast build tool and dev server
 - **Tailwind CSS** - Utility-first CSS framework
 - **Vitest** - Fast unit test framework
-- **MSW** - API mocking for tests
 - **Zustand** - Lightweight state management
 - **ESLint** - Code linting with React Compiler support
 - **Prettier** - Code formatting
@@ -22,24 +21,20 @@ This project follows a **feature-based architecture**:
 
 ```
 src/
-├── app/                 # App shell: routes, providers, layout
-│   ├── providers/       # Context providers, Zustand store providers
-│   ├── layout/          # Layout components
-│   └── routes/         # Route definitions
 ├── features/           # Vertical slices: feature-based organization
-│   └── canvas/         # Example feature (Miro-like canvas)
+│   ├── canvas/        # Canvas feature (Miro-like infinite canvas)
+│   │   ├── components/ # Feature-specific UI components
+│   │   ├── hooks/      # Feature-specific hooks
+│   │   ├── types/     # TypeScript types for this feature
+│   │   ├── utils/     # Utility functions
+│   │   └── __tests__/ # Feature tests
+│   └── comments/      # Comment thread system feature
 │       ├── components/ # Feature-specific UI components
-│       ├── hooks/      # Feature-specific hooks
 │       ├── store/      # Zustand store for this feature
-│       ├── api/        # API calls for this feature
-│       ├── types/      # TypeScript types for this feature
-│       └── __tests__/  # Feature tests
-├── shared/             # Reusable UI + utilities (no feature knowledge)
-│   ├── ui/            # Shared UI components (Button, Input, etc.)
-│   ├── hooks/         # Shared hooks
-│   ├── utils/         # Utility functions
-│   └── lib/           # Third-party library wrappers
-└── entities/          # Optional: domain objects used across features
+│       ├── types/     # TypeScript types for this feature
+│       └── __tests__/ # Feature tests
+└── shared/            # Reusable utilities (no feature knowledge)
+    └── utils/         # Utility functions
 ```
 
 ## Getting Started
@@ -104,7 +99,7 @@ This project uses:
 
 ## Testing
 
-Tests are written with Vitest and React Testing Library. MSW is used for API mocking.
+Tests are written with Vitest and React Testing Library.
 
 Run tests:
 
@@ -122,32 +117,30 @@ pnpm test:ui
 
 The project uses path aliases for cleaner imports:
 
-- `@/app` → `src/app`
 - `@/features` → `src/features`
 - `@/shared` → `src/shared`
-- `@/entities` → `src/entities`
 - `@/*` → `src/*`
 
 ## Development Guidelines
 
 ### Feature Development
 
-- Each feature is self-contained with its own components, hooks, state, API calls, types, and tests
-- Features should not import from other features directly
+- Each feature is self-contained with its own components, hooks, state, types, and tests
+- Pragmatic cross-feature dependencies are acceptable when features are tightly coupled (e.g., canvas importing comment store). The dependent feature knows about the dependency, but the dependency has no knowledge of the dependent feature.
 - Shared code goes in `src/shared/`
-- Domain objects shared across features go in `src/entities/`
 
 ### State Management
 
 - Use Zustand for feature-level state management
-- Each feature has its own store in `features/[feature-name]/store/`
-- Global app state can be managed in `app/providers/`
+- Each feature has its own store in `features/[feature-name]/store/` when needed
+- Component state can use `useState`/`useRef` for local state
 
 ### Testing
 
 - Write tests for all features in `__tests__/` directories
-- Use MSW for API mocking
 - Follow React Testing Library best practices
+- Use semantic `data-testid` attributes for structural elements
+- Never query by CSS class names in tests
 
 ## AI-Assisted Development
 
