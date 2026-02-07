@@ -15,10 +15,11 @@
 
 ### Canvas Architecture
 
-The canvas uses a **two-layer DOM structure** for infinite canvas feel:
+The canvas uses a **three-layer DOM structure** for infinite canvas feel with separate render layers:
 
 - **Viewport**: Fixed-size container (`position: relative; overflow: hidden`) that handles user interactions and renders the infinite grid background
-- **World**: Transformable container (`position: absolute`) with CSS transform, holds canvas content positioned at world coordinates
+- **ContentWorld** (`canvas-world`): Transformable container (`position: absolute`) with CSS transform `scale(zoom) translate(...)`, holds canvas content (design elements) positioned at world coordinates. Content scales with zoom.
+- **MetaOverlay** (`canvas-overlay`): Overlay container (`position: absolute; inset: 0; pointer-events: none`) that renders comment pins. Pins use `worldToViewport()` for positioning, pan with the camera but do NOT scale with zoom (constant screen size). Pins have `pointer-events: auto` to remain clickable.
 
 **Camera Model**: `camera.x/y` represents the world coordinate visible at the viewport's top-left corner. `camera.zoom` is the scale factor (1.0 = 100%).
 
@@ -309,7 +310,7 @@ expect(pin).toHaveAttribute('data-resolved', 'true')
 
 The main canvas feature for Miro-like functionality:
 
-- **Components**: `Canvas.tsx` - Slim render-only component; renders viewport/world structure, grid background, demo objects, comment pins, and zoom indicator. All interaction logic is delegated to the `useCanvasInteraction` hook.
+- **Components**: `Canvas.tsx` - Slim render-only component; renders viewport with ContentWorld layer (scales with zoom) and MetaOverlay layer (constant size), grid background, demo objects, comment pins, and zoom indicator. All interaction logic is delegated to the `useCanvasInteraction` hook.
 - **Hooks**:
   - `useCanvasInteraction.ts` - Core interaction hook: manages camera state, cursor state, trackpad pan/zoom (non-passive wheel listener with `ctrlKey` detection), space+drag pan, middle-mouse pan, click-to-create-thread, and smooth camera focus animation. Integrates with comment editor store for thread creation and camera focus.
   - `useCanvas.ts` - Canvas feature hook (placeholder, uses Zustand store)
@@ -349,7 +350,7 @@ features/canvas/
 A complete comment thread system integrated with the canvas:
 
 - **Components**:
-  - `CommentPin.tsx` - Speech bubble-shaped pin marker positioned in world layer, clickable, shows hover tooltip with thread preview
+  - `CommentPin.tsx` - Speech bubble-shaped pin marker positioned in MetaOverlay layer using `worldToViewport()` conversion, clickable, shows hover tooltip with thread preview. Pins pan with camera but maintain constant screen size (do not scale with zoom). Accepts `camera` prop for viewport coordinate calculation.
   - `ThreadPanel.tsx` - Thread detail view: metadata, comment list with inline editing, reply input, resolve toggle
   - `ThreadList.tsx` - Filterable list of all threads (open/resolved/all) with click-to-focus animation
   - `SidePanel.tsx` - Container component that switches between ThreadList and ThreadPanel based on selection

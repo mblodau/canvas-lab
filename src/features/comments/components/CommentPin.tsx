@@ -11,9 +11,10 @@ const ANIMATION_DURATION = '0.2s'
 
 interface CommentPinProps {
   thread: CommentThread
+  camera: { x: number; y: number; zoom: number }
 }
 
-export const CommentPin = ({ thread }: CommentPinProps) => {
+export const CommentPin = ({ thread, camera }: CommentPinProps) => {
   const selectedThreadId = useEditorStore(state => state.selectedThreadId)
   const selectThread = useEditorStore(state => state.selectThread)
   const [hovered, setHovered] = useState(false)
@@ -23,6 +24,9 @@ export const CommentPin = ({ thread }: CommentPinProps) => {
   const isSelected = selectedThreadId === thread.id
   const commentCount = thread.comments.length
   const firstComment = thread.comments[0]
+
+  const viewportX = (thread.x - camera.x) * camera.zoom
+  const viewportY = (thread.y - camera.y) * camera.zoom
 
   // Measure the full content height whenever it could change.
   // Content is always rendered (at full width) but clipped by overflow:hidden.
@@ -57,10 +61,10 @@ export const CommentPin = ({ thread }: CommentPinProps) => {
       data-testid="comment-pin"
       data-resolved={thread.resolved}
       data-selected={isSelected}
-      className="absolute cursor-pointer"
+      className="absolute cursor-pointer pointer-events-auto"
       style={{
-        left: `${thread.x}px`,
-        top: `${thread.y}px`,
+        left: `${viewportX}px`,
+        top: `${viewportY}px`,
         // Anchor at bottom-left corner (where the pointer is)
         transform: 'translate(0, -100%)',
         zIndex: hovered ? 9999 : isSelected ? 10 : 1,

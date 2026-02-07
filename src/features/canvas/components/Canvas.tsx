@@ -35,9 +35,11 @@ export const Canvas = () => {
           className="absolute w-20 h-20 bg-green-500 border-2 border-green-700"
           style={{ left: '-200px', top: '-150px' }}
         />
+      </div>
 
+      <div data-testid="canvas-overlay" className="absolute inset-0 pointer-events-none">
         {threads.map(thread => (
-          <CommentPin key={thread.id} thread={thread} />
+          <CommentPin key={thread.id} thread={thread} camera={camera} />
         ))}
       </div>
 

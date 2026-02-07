@@ -64,6 +64,12 @@ describe('Canvas', () => {
       expect(world).toBeInTheDocument()
     })
 
+    it('renders the overlay container', () => {
+      render(<Canvas />)
+      const overlay = screen.getByTestId('canvas-overlay')
+      expect(overlay).toBeInTheDocument()
+    })
+
     it('renders the zoom indicator with default 100%', () => {
       render(<Canvas />)
       const zoomIndicator = screen.getByTestId('zoom-indicator')

@@ -34,18 +34,42 @@ describe('CommentPin', () => {
     comments: [],
   }
 
+  const defaultCamera = { x: 0, y: 0, zoom: 1 }
+
   beforeEach(() => {
     vi.clearAllMocks()
     mockSelectedThreadId = null
   })
 
-  it('renders at the correct world position', () => {
-    render(<CommentPin thread={mockThread} />)
+  it('renders at the correct viewport position with default camera', () => {
+    render(<CommentPin thread={mockThread} camera={defaultCamera} />)
 
     const pin = screen.getByTestId('comment-pin')
     expect(pin).toHaveStyle({
       left: '100px',
       top: '200px',
+    })
+  })
+
+  it('renders at correct viewport position with zoom applied', () => {
+    const camera = { x: 0, y: 0, zoom: 2 }
+    render(<CommentPin thread={mockThread} camera={camera} />)
+
+    const pin = screen.getByTestId('comment-pin')
+    expect(pin).toHaveStyle({
+      left: '200px',
+      top: '400px',
+    })
+  })
+
+  it('renders at correct viewport position with panned camera', () => {
+    const camera = { x: 50, y: 100, zoom: 1 }
+    render(<CommentPin thread={mockThread} camera={camera} />)
+
+    const pin = screen.getByTestId('comment-pin')
+    expect(pin).toHaveStyle({
+      left: '50px',
+      top: '100px',
     })
   })
 
@@ -58,7 +82,7 @@ describe('CommentPin', () => {
       ],
     }
 
-    render(<CommentPin thread={threadWithComments} />)
+    render(<CommentPin thread={threadWithComments} camera={defaultCamera} />)
 
     const pin = screen.getByTestId('comment-pin')
     expect(pin).toHaveTextContent('2')
@@ -70,14 +94,14 @@ describe('CommentPin', () => {
       resolved: true,
     }
 
-    render(<CommentPin thread={resolvedThread} />)
+    render(<CommentPin thread={resolvedThread} camera={defaultCamera} />)
 
     const pin = screen.getByTestId('comment-pin')
     expect(pin).toHaveAttribute('data-resolved', 'true')
   })
 
   it('marks open threads with data attribute', () => {
-    render(<CommentPin thread={mockThread} />)
+    render(<CommentPin thread={mockThread} camera={defaultCamera} />)
 
     const pin = screen.getByTestId('comment-pin')
     expect(pin).toHaveAttribute('data-resolved', 'false')
@@ -85,7 +109,7 @@ describe('CommentPin', () => {
 
   it('calls selectThread when clicked', async () => {
     const user = userEvent.setup()
-    render(<CommentPin thread={mockThread} />)
+    render(<CommentPin thread={mockThread} camera={defaultCamera} />)
 
     const pin = screen.getByTestId('comment-pin')
     await user.click(pin)
@@ -95,14 +119,14 @@ describe('CommentPin', () => {
 
   it('shows selected state when thread is selected', () => {
     mockSelectedThreadId = 'thread-1'
-    render(<CommentPin thread={mockThread} />)
+    render(<CommentPin thread={mockThread} camera={defaultCamera} />)
 
     const pin = screen.getByTestId('comment-pin')
     expect(pin).toHaveAttribute('data-selected', 'true')
   })
 
   it('shows unselected state when thread is not selected', () => {
-    render(<CommentPin thread={mockThread} />)
+    render(<CommentPin thread={mockThread} camera={defaultCamera} />)
 
     const pin = screen.getByTestId('comment-pin')
     expect(pin).toHaveAttribute('data-selected', 'false')

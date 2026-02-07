@@ -18,6 +18,16 @@ Each entry follows this format:
 
 ---
 
+## 2026-02-07 - Render Layers Refactor
+
+### Changed
+
+- **What**: Updated Canvas Architecture section from "two-layer DOM structure" to "three-layer DOM structure" to reflect the new ContentWorld/MetaOverlay split. Updated Canvas and CommentPin component descriptions to document layer responsibilities, viewport coordinate conversion, and the `camera` prop.
+- **Why**: Refactored canvas rendering into separate ContentWorld (scales with zoom) and MetaOverlay (constant screen size) layers. Documentation needed to reflect this architectural change so future developers understand the three-layer structure and why pins are positioned differently from content elements.
+- **When**: 2026-02-07
+
+---
+
 ## 2026-02-07 - Retrospective: Code Quality Analysis Session
 
 ### Changed
